@@ -106,22 +106,38 @@
 
 
 (define (shuffle lst)
-  ; [ListOf N] -> [ListOf N]
-  (cond
-    [(< (length lst) 2) lst]
-    [else 
-     (local (
-             (define n (random (length lst)))
-             (define (take n lst)
-               (cond
-                 [(= n 0) (first lst)]
-                 [else (take (sub1 n) (rest lst))]))
-             (define (drop n lst)
-               (cond
-                 [(= n 0) (rest lst)]
-                 [else (cons (first lst) (drop (sub1 n) (rest lst)))])))
-       ; - IN -
-       (cons (take n lst) (shuffle (drop n lst))))]))
+  ; [ListOf X] -> [ListOf X]
+  ; shuffle a list of X in the most efficien manner
+  (local (
+          (define-struct shufflor [rand ord orig])
+          (define ini-shf (make-shufflor '() '() lst))
+          (define (randomize shf)
+            ;Shufflor -> [ListOf X]
+            (local (
+                    (define rnd (shufflor-rand shf))
+                    (define ordr (shufflor-ord shf))
+                    (define og (shufflor-orig shf))
+                    (define (take n s)
+                      ; N Shufflor -> Shufflor
+                      (local (
+                              (define r (shufflor-rand s))
+                              (define d (shufflor-ord s))
+                              (define o (shufflor-orig s)))
+                        (cond
+                          [(= n 0) (randomize (make-shufflor
+                                               (cons (first o) r)
+                                               '() (append d (rest o))))]
+                          [else (take (sub1 n)
+                                      (make-shufflor
+                                       r (cons (first o) d) (rest o)))]))))
+              ; - IN -              
+              (cond
+                [(and (empty? ordr) (empty? og)) rnd]
+                [(< (length og) 2)
+                 (randomize (make-shufflor (cons (first og) rnd) '() ordr))]
+                [else (take (random (length og)) shf)]))))
+    ; - IN -
+    (randomize ini-shf)))
 
 
 (define (construct-diagonals n op c0)
