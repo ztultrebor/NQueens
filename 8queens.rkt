@@ -1,39 +1,39 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname 8queens) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
-(define WIDTH 8)
+
+; ==========================
+; constants
+
+(define WIDTH 3)
 (define ROWS
   (build-list WIDTH (lambda (y) (build-list WIDTH (lambda (x) (+ (* WIDTH y) x))))))
 (define COLUMNS
   (build-list WIDTH (lambda (y) (build-list WIDTH (lambda (x) (+ y (* WIDTH x)))))))
-(define DIAGONALS+
+(define (construct-diagonals n op c0)
+  ; N [Number Number] -> Number N -> [ListOf [ListOf N]]
+  ; constructs the pos- and neg-sloped diagonals
   (build-list
-   (- (* 2 WIDTH) 1)
+   (- (* 2 n) 1)
    (lambda (z)
      (foldr append '()
             (build-list
-             WIDTH
+             n
              (lambda (y)
                (filter (lambda (r) (>= r 0))
                        (build-list
-                        WIDTH
+                        n
                         (lambda (x)
-                          (if (= (+ x y) z) (+ (* y WIDTH) x) -1))))))))))
-(define DIAGONALS-
-  (build-list
-   (- (* 2 WIDTH) 1)
-   (lambda (z)
-     (foldr append '()
-            (build-list
-             WIDTH
-             (lambda (y)
-               (filter (lambda (r) (>= r 0))
-                       (build-list
-                        WIDTH
-                        (lambda (x)
-                          (if (= (- x y 1) (- z WIDTH))
-                              (+ (* y WIDTH) x) -1))))))))))
+                          (if (= (op x y) (- z c0)) (+ (* y n) x) -1))))))))))
+(define DIAGONALS+ (construct-diagonals WIDTH + 0))
+(define DIAGONALS- (construct-diagonals WIDTH - (- WIDTH 1)))
 (define ZONES (append ROWS COLUMNS DIAGONALS+ DIAGONALS-))
 (define ITERATOR (build-list (sqr WIDTH) identity))
 
 
+
+; =======================
+; checks
+
+(check-expect (construct-diagonals 3 + 0)  '((0) (1 3) (2 4 6) (5 7) (8)))
+(check-expect (construct-diagonals 3 - 2)  '((6) (3 7) (0 4 8) (1 5) (2)))
