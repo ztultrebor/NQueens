@@ -9,7 +9,7 @@
 ; constants
 
 ; !!! this stuff should not be sitting at global scope!
-(define WIDTH 7)
+(define WIDTH 8)
 (define ROWS
   (build-list WIDTH (lambda (y) (build-list WIDTH (lambda (x) (+ (* WIDTH y) x))))))
 (define COLUMNS
@@ -42,6 +42,15 @@
 ; =========================
 ; functions
 
+(define (solve board)
+  ; [ListOf N] -> [ListOf N]
+  ; attempts to solve the NQueens problem through
+  ; backtracking, depth-first search
+  (local (
+          (define opportunities (shuffle (availability board))))
+    (place-queen opportunities board)))
+
+
 (define (place-queen opps board)
   ; [ListOf N] [ListOf N] -> [ListOf N]
   ; coordinates the backtracking aspects by trying squares
@@ -65,16 +74,6 @@
               (if (false? attempted-solution)
                   (place-queen (rest opps) board)
                   attempted-solution))])))
-
-
-(define (solve board)
-  ; [ListOf N] -> [ListOf N]
-  ; attempts to solve the NQueens problem through
-  ; backtracking, depth-first search
-  (local (
-          (define opportunities (availability board)))
-          
-    (place-queen opportunities board)))
 
 
 (define (valid? n board)
@@ -148,14 +147,30 @@
                               (map display-square r))) rows))))
 
 
+(define (shuffle lst)
+  ; [ListOf N] -> [ListOf N]
+  (cond
+    [(< (length lst) 2) lst]
+    [else 
+     (local (
+             (define n (random (length lst)))
+             (define (take n lst)
+               (cond
+                 [(= n 0) (first lst)]
+                 [else (take (sub1 n) (rest lst))]))
+             (define (drop n lst)
+               (cond
+                 [(= n 0) (rest lst)]
+                 [else (cons (first lst) (drop (sub1 n) (rest lst)))])))
+       ; - IN -
+
+       (cons (take n lst) (shuffle (drop n lst))))]))
+
+   
 (define (display-square n)
   ; N -> Img
   ; generates a visually appealing image of a sudoku square
   (overlay (text (if (= n 0) "" (number->string n)) TEXTSIZE "green") SQUARE))
-
-
-
-(display (solve EMPTYBOARD))
 
 
 
@@ -166,3 +181,10 @@
 (check-expect (construct-diagonals 3 + 0)  '((0) (1 3) (2 4 6) (5 7) (8)))
 (check-expect (construct-diagonals 3 - 2)  '((6) (3 7) (0 4 8) (1 5) (2)))
 (check-expect (availability EMPTYBOARD) ITERATOR)
+
+
+
+; ========================
+; action!
+
+(display (solve EMPTYBOARD))
