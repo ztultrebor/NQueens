@@ -35,7 +35,9 @@
 (define ITERATOR (build-list (sqr WIDTH) identity))
 (define EMPTYBOARD (make-list (sqr WIDTH) 0))
 (define TEXTSIZE 24)
-(define SQUARE (rectangle TEXTSIZE TEXTSIZE "solid" "white"))
+(define SQUARE (overlay
+                (rectangle TEXTSIZE TEXTSIZE "outline" "black")
+                (rectangle TEXTSIZE TEXTSIZE "solid" "white")))
 (define BLANKTANGLE (rectangle 0 0 "solid" "white"))
 
 
@@ -170,7 +172,7 @@
 (define (display-square n)
   ; N -> Img
   ; generates a visually appealing image of a sudoku square
-  (overlay (text (if (= n 0) "" (number->string n)) TEXTSIZE "green") SQUARE))
+  (overlay (circle (/ TEXTSIZE 3) "solid" (if (= n 0) "white" "green")) SQUARE))
 
 
 
