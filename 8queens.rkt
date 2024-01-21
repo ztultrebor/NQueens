@@ -13,8 +13,7 @@
   ; attempts to solve the NQueens problem through
   ; backtracking, depth-first search
   (local (
-          (define opportunities
-            (sort (shuffle (availability board)) options<?)))
+          (define opportunities (availability board)))
     (place-queen opportunities board)))
 
 
@@ -51,10 +50,13 @@
 (define (availability board)
   ; [ListOf N] -> [ListOf Boolean]
   ; derive the list of possible values where the next queen can go
+  (if (= (foldr + 0 board) 0)
+      (shuffle OPENING-MOVES)
   (local (
-          (define truth (map (λ (sq) (valid? sq board)) ITERATOR)))
+          (define truth (map (λ (sq) (valid? sq board)) ITERATOR))
+          (define sanctuaries (filter (λ (n) (@index n truth)) ITERATOR)))
     ; - IN -
-    (filter (λ (n) (@index n truth)) ITERATOR)))
+    (sort (shuffle sanctuaries) options<?))))
 
 
 (define (@index n lst)
@@ -64,6 +66,12 @@
     [(empty? lst) #f]
     [(= 0 n) (first lst)]
     [else (@index (sub1 n) (rest lst))]))
+
+
+(define (options<? x y)
+  ; N N -> Boolean
+  ; #t if a queen at x threatens fewer squares than one at y, else #f
+  (< (length (@index x THREATS)) (length (@index y THREATS))))
 
 
 (define (list->set lst)
@@ -168,7 +176,7 @@
 ; =======================
 ; constants
 
-(define WIDTH 9)
+(define WIDTH 8)
 (define ROWS
   (build-list WIDTH
               (lambda (y) (build-list WIDTH (lambda (x) (+ (* WIDTH y) x))))))
@@ -190,13 +198,11 @@
                 (rectangle TEXTSIZE TEXTSIZE "outline" "black")
                 (rectangle TEXTSIZE TEXTSIZE "solid" "white")))
 (define BLANKTANGLE (rectangle 0 0 "solid" "white"))
-
-
-(define (options<? x y)
-  ; N N -> Boolean
-  ; #t if a queen at x threatens fewer squares than one at y, else #f
-  (< (length (@index x THREATS)) (length (@index y THREATS))))
-
+(define OPENING-MOVES
+  (foldr append '()
+         (build-list (quotient (+ WIDTH 1) 2)
+                     (lambda (y) (build-list (+ y 1)
+                                             (lambda (x) (+ (* WIDTH x) y)))))))
 
 
 ; =======================
@@ -205,7 +211,6 @@
 (define q1 (cons 1 (rest (make-list (sqr 4) 0))))
 (check-expect (construct-diagonals 3 + 0)  '((0) (1 3) (2 4 6) (5 7) (8)))
 (check-expect (construct-diagonals 3 - 2)  '((6) (3 7) (0 4 8) (1 5) (2)))
-(check-expect (availability EMPTYBOARD) ITERATOR)
 (check-expect (@index 3 '(5 4 3 2 1)) 2)
 
 
