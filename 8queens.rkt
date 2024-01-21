@@ -5,42 +5,6 @@
 
 
 
-; ==========================
-; constants
-
-; !!! this stuff should not be sitting at global scope!
-(define WIDTH 8)
-(define ROWS
-  (build-list WIDTH (lambda (y) (build-list WIDTH (lambda (x) (+ (* WIDTH y) x))))))
-(define COLUMNS
-  (build-list WIDTH (lambda (y) (build-list WIDTH (lambda (x) (+ y (* WIDTH x)))))))
-(define (construct-diagonals n op c0)
-  ; N [Number Number -> Number] N -> [ListOf [ListOf N]]
-  ; constructs the pos- and neg-sloped diagonals
-  (build-list
-   (- (* 2 n) 1)
-   (lambda (z)
-     (foldr append '()
-            (build-list
-             n
-             (lambda (y)
-               (filter (lambda (r) (>= r 0))
-                       (build-list
-                        n
-                        (lambda (x)
-                          (if (= (op x y) (- z c0)) (+ (* y n) x) -1))))))))))
-(define DIAGONALS+ (construct-diagonals WIDTH + 0))
-(define DIAGONALS- (construct-diagonals WIDTH - (- WIDTH 1)))
-(define ZONES (append ROWS COLUMNS DIAGONALS+ DIAGONALS-))
-(define ITERATOR (build-list (sqr WIDTH) identity))
-(define EMPTYBOARD (make-list (sqr WIDTH) 0))
-(define TEXTSIZE 24)
-(define SQUARE (overlay
-                (rectangle TEXTSIZE TEXTSIZE "outline" "black")
-                (rectangle TEXTSIZE TEXTSIZE "solid" "white")))
-(define BLANKTANGLE (rectangle 0 0 "solid" "white"))
-
-
 ; =========================
 ; functions
 
@@ -55,7 +19,7 @@
 
 (define (place-queen opps board)
   ; [ListOf N] [ListOf N] -> [ListOf N]
-  ; coordinates the backtracking aspects by trying squares
+  ; coordinates the backtracking aspects by placing queens at squares
   ; one-by-one such that search stops as soon as a solution
   ; has been identified
   (local (
@@ -63,7 +27,6 @@
             ; N [ListOf N] -> N
             ; sticks a queen at square n
             (cond
-              ;[(empty? board) '()]
               [(= n 0) (cons 1 (rest board))]
               [else (cons (first board) (stick (sub1 n) (rest board)))])))
     ; - IN -
@@ -81,7 +44,7 @@
 (define (valid? n board)
   ; N [ListOf N] -> Boolean
   ; determines if a queen can slot into a particular square
-  (andmap (λ (sq) (= (read-square sq board) 0)) (qrange n)))
+  (andmap (λ (sq) (= (@index sq board) 0)) (@index n THREATS)))
 
 
 (define (availability board)
@@ -90,32 +53,25 @@
   (local (
           (define truth (map (λ (sq) (valid? sq board)) ITERATOR)))
     ; - IN -
-    (filter (λ (n) (read-square n truth)) ITERATOR)))
+    (filter (λ (n) (@index n truth)) ITERATOR)))
 
 
-(define (read-square n board)
+(define (@index n lst)
   ; N [ListOf N] -> N
   ; retrieves the value of the square at position n
   (cond
-    [(empty? board) #f]
-    [(= 0 n) (first board)]
-    [else (read-square (sub1 n) (rest board))]))
+    [(empty? lst) #f]
+    [(= 0 n) (first lst)]
+    [else (@index (sub1 n) (rest lst))]))
 
 
-(define (qrange n)
-  ; N -> [ListOf N]
-  ; returns all squares threatened by a queen at n
-  (list-to-set (foldr append '()
-                      (filter (λ (z) (member? n z)) ZONES))))
-
-
-(define (list-to-set lst)
+(define (list->set lst)
   ; [ListOf X] -> [ListOf X]
   ; converts a list into a set
   (cond
     [(empty? lst) '()]
-    [(member? (first lst) (rest lst)) (list-to-set (rest lst))]
-    [else (cons (first lst) (list-to-set (rest lst)))]))
+    [(member? (first lst) (rest lst)) (list->set (rest lst))]
+    [else (cons (first lst) (list->set (rest lst)))]))
 
 
 ;; !!! refactor this
@@ -165,14 +121,56 @@
                  [(= n 0) (rest lst)]
                  [else (cons (first lst) (drop (sub1 n) (rest lst)))])))
        ; - IN -
-
        (cons (take n lst) (shuffle (drop n lst))))]))
 
-   
+
+(define (construct-diagonals n op c0)
+  ; N [Number Number -> Number] N -> [ListOf [ListOf N]]
+  ; constructs the pos- and neg-sloped diagonals
+  (build-list
+   (- (* 2 n) 1)
+   (lambda (z)
+     (foldr append '()
+            (build-list
+             n
+             (lambda (y)
+               (filter (lambda (r) (>= r 0))
+                       (build-list
+                        n
+                        (lambda (x)
+                          (if (= (op x y) (- z c0)) (+ (* y n) x) -1))))))))))
+
+
 (define (display-square n)
   ; N -> Img
   ; generates a visually appealing image of a sudoku square
-  (overlay (circle (/ TEXTSIZE 3) "solid" (if (= n 0) "white" "green")) SQUARE))
+  (overlay (circle (/ TEXTSIZE 3) "solid" (if (= n 0) "white" "black")) SQUARE))
+
+
+
+; =======================
+; constants
+
+(define WIDTH 8)
+(define ROWS
+  (build-list WIDTH (lambda (y) (build-list WIDTH (lambda (x) (+ (* WIDTH y) x))))))
+(define COLUMNS
+  (build-list WIDTH (lambda (y) (build-list WIDTH (lambda (x) (+ y (* WIDTH x)))))))
+(define DIAGONALS+ (construct-diagonals WIDTH + 0))
+(define DIAGONALS- (construct-diagonals WIDTH - (- WIDTH 1)))
+(define ZONES (append ROWS COLUMNS DIAGONALS+ DIAGONALS-))
+(define ITERATOR (build-list (sqr WIDTH) identity))
+(define THREATS
+  (map (λ (n) (list->set
+               (foldr append '()
+                      (filter (λ (z) (member? n z)) ZONES))))
+       ITERATOR))
+(define EMPTYBOARD (make-list (sqr WIDTH) 0))
+(define TEXTSIZE 24)
+(define SQUARE (overlay
+                (rectangle TEXTSIZE TEXTSIZE "outline" "black")
+                (rectangle TEXTSIZE TEXTSIZE "solid" "white")))
+(define BLANKTANGLE (rectangle 0 0 "solid" "white"))
 
 
 
