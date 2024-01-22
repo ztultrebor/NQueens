@@ -79,10 +79,14 @@
 (define (list->set lst)
   ; [ListOf X] -> [ListOf X]
   ; converts a list into a set
-  (cond
-    [(empty? lst) '()]
-    [(member? (first lst) (rest lst)) (list->set (rest lst))]
-    [else (cons (first lst) (list->set (rest lst)))]))
+  (local (
+          (define (list->set lst set)
+            (cond
+              [(empty? lst) set]
+              [(member? (first lst) (rest lst)) (list->set (rest lst) set)]
+              [else (list->set (rest lst) (cons (first lst) set))])))
+    ; - IN -
+    (list->set lst '())))
 
 
 (define (shuffle lst)
