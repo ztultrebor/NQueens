@@ -81,6 +81,8 @@
   ; converts a list into a set
   (local (
           (define (list->set lst set)
+            ; [ListOf X] [ListOf X] -> [ListOf X]
+            ; transfers elements from a list to a set as appropriate
             (cond
               [(empty? lst) set]
               [(member? (first lst) (rest lst)) (list->set (rest lst) set)]
@@ -91,37 +93,27 @@
 
 (define (shuffle lst)
   ; [ListOf X] -> [ListOf X]
-  ; shuffle a list of X in the most efficien manner
+  ; shuffle a list of X in the most efficient manner
   (local (
-          (define-struct shufflor [rand ord orig])
-          (define ini-shf (make-shufflor '() '() lst))
-          (define (randomize shf)
-            ;Shufflor -> [ListOf X]
+          (define (shuffle lst-rndm lst-orig)
+            ; [ListOf X] [ListOf X] [ListOf X] -> [ListOf X]
+            ; maintain a list of shuffled elements, and two lists yet-to-be
             (local (
-                    (define rnd (shufflor-rand shf))
-                    (define ordr (shufflor-ord shf))
-                    (define og (shufflor-orig shf))
-                    (define (take n s)
-                      ; N Shufflor -> Shufflor
-                      (local (
-                              (define r (shufflor-rand s))
-                              (define d (shufflor-ord s))
-                              (define o (shufflor-orig s)))
-                        (cond
-                          [(= n 0) (randomize (make-shufflor
-                                               (cons (first o) r)
-                                               '() (append d (rest o))))]
-                          [else (take (sub1 n)
-                                      (make-shufflor
-                                       r (cons (first o) d) (rest o)))]))))
+                    (define (take n rnd trv 2bt)
+                      ; N [ListOf X] [ListOf X] [ListOf X] -> [ListOf X]
+                      ; move element n from unshuffled list to shuffled
+                      (cond
+                        [(= n 0) (shuffle (cons (first 2bt) rnd)
+                                          (append trv (rest 2bt)))]
+                        [else (take (sub1 n) rnd
+                                    (cons (first 2bt) trv) (rest 2bt))])))
               ; - IN -              
               (cond
-                [(and (empty? ordr) (empty? og)) rnd]
-                [(or (empty? og) (empty? (rest og)))
-                 (randomize (make-shufflor (cons (first og) rnd) '() ordr))]
-                [else (take (random (length og)) shf)]))))
+                [(empty? lst-orig) lst-rndm]
+                [else
+                 (take (random (length lst-orig)) lst-rndm '() lst-orig)]))))
     ; - IN -
-    (randomize ini-shf)))
+    (shuffle '() lst)))
 
 
 (define (construct-diagonals n op c0)
@@ -182,7 +174,7 @@
 ; =======================
 ; constants
 
-(define WIDTH 4)
+(define WIDTH 8)
 (define ROWS
   (build-list WIDTH
               (lambda (y) (build-list WIDTH (lambda (x) (+ (* WIDTH y) x))))))
