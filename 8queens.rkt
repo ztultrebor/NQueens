@@ -23,19 +23,21 @@
   ; one-by-one such that search stops as soon as a solution
   ; has been identified
   (local (
-          (define (stick n board)
+          (define (stick n bd-trav bd-2btrav)
             ; N [ListOf N] -> N
             ; sticks a queen at square n
             (cond
-              [(= n 0) (cons 1 (rest board))]
-              [else (cons (first board) (stick (sub1 n) (rest board)))])))
+              [(= n 0) (append bd-trav (cons 1 (rest bd-2btrav)))]
+              [else (stick (sub1 n)
+                           (append bd-trav (list (first bd-2btrav)))
+                           (rest bd-2btrav))])))
     ; - IN -
     (cond
       [(= (foldr + 0 board) WIDTH) board]
       [(empty? opps) #f]
       [else (local (
                     (define attempted-solution
-                      (solve (stick (first opps) board))))
+                      (solve (stick (first opps) '() board ))))
               (if (false? attempted-solution)
                   (place-queen (rest opps) board)
                   attempted-solution))])))
@@ -52,11 +54,11 @@
   ; derive the list of possible values where the next queen can go
   (if (= (foldr + 0 board) 0)
       (shuffle OPENING-MOVES)
-  (local (
-          (define truth (map (λ (sq) (valid? sq board)) ITERATOR))
-          (define sanctuaries (filter (λ (n) (@index n truth)) ITERATOR)))
-    ; - IN -
-    (sort (shuffle sanctuaries) options<?))))
+      (local (
+              (define truth (map (λ (sq) (valid? sq board)) ITERATOR))
+              (define sanctuaries (filter (λ (n) (@index n truth)) ITERATOR)))
+        ; - IN -
+        (sort (shuffle sanctuaries) options<?))))
 
 
 (define (@index n lst)
@@ -176,7 +178,7 @@
 ; =======================
 ; constants
 
-(define WIDTH 8)
+(define WIDTH 4)
 (define ROWS
   (build-list WIDTH
               (lambda (y) (build-list WIDTH (lambda (x) (+ (* WIDTH y) x))))))
@@ -217,4 +219,4 @@
 ; ========================
 ; action!
 
-(display (solve EMPTYBOARD))
+(time (display (solve EMPTYBOARD)))
